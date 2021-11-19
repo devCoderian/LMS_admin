@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.adm.dao.testPersonControlDao">
+
+	<!--  강의 시험 정보 조회  -->
+	<select id = "list_lec" resultType ="kr.kosmo.jobkorea.adm.model.testPersonControlModel">
+	<![CDATA[
+	select distinct(te.test_id),
+	 					  te.test_id_2,
+					       l.lec_name,
+					       te.test_sort,
+					       (CASE
+					       WHEN te.test_end < NOW() THEN '시험 완료'
+					       ELSE '시험중'
+					       END
+					       )AS c_end,
+					       te.test_name,
+					       te.lec_id, 
+					       DATE_FORMAT(te.test_start, '%Y.%m.%d') as test_start,
+					   	   te.test_end,
+					       l.pre_pnum,
+					       (select COUNT(test_sco)
+					        FROM  tb_test_user tu
+					        where tu.test_id = te.test_id) sco,
+					       (l.pre_pnum-(select COUNT(test_sco)
+					        FROM  tb_test_user tu
+        					where tu.test_id = te.test_id)) as minNum
+       FROM tb_test te
+       LEFT OUTER JOIN tb_lec_info l ON te.lec_id = l.lec_id
+       LEFT OUTER JOIN tb_lecstd_info le ON l.lec_id = le.lec_id
+       WHERE te.test_sort = '본시험'
+       ]]>
+		<if test ="!(searchWord eq 'all'.toString())" >
+		AND lec_name = #{searchWord}
+		</if>
+	   <if test="(pageIndex != null) and (!pageIndex.equals('')) and (pageSize != null) and (!pageSize.equals(''))">
+         LIMIT #{pageIndex}, #{pageSize}
+      </if>
+	</select>
+	
+	<!-- where sort 본시 -->
+	<!--  강의 시험 카운트 조회  -->
+	<select id="cnt_list_lec" resultType="int">
+	   SELECT COUNT(distinct(te.test_id_2)) as totalCount
+       FROM tb_test te
+       LEFT OUTER JOIN tb_lec_info l ON te.lec_id = l.lec_id
+       LEFT OUTER JOIN tb_lecstd_info le ON l.lec_id = le.lec_id
+		<if test ="!(searchWord eq 'all'.toString())" >
+		  WHERE te.test_sort = '본시험' AND lec_name = #{searchWord}
+		</if>
+	
+	</select>
+	<!-- SELECT COUNT(distinct(te.test_id)) as totalCount
+       FROM tb_test te
+       LEFT OUTER JOIN tb_lec_info l ON te.lec_id = l.lec_id
+       LEFT OUTER JOIN tb_lecstd_info le ON l.lec_id = le.lec_id; -->
+	<!-- 학생 리스트 조회 -->
+	<select id="std_test" resultType="kr.kosmo.jobkorea.adm.model.testPersonControlModel">
+   	<![CDATA[
+   	select ui.std_num, 
+   			  ui.name,
+   			IFNULL((SELECT  tu.test_sco
+				          		FROM   tb_test_user tu
+				          		WHERE   tu.test_id = #{test_id}
+				          		and tu.std_id = li.std_id), 1000)AS test_sco_f
+			,(SELECT  tu.pass
+				          		FROM   tb_test_user tu
+				          		WHERE   tu.test_id = #{test_id}
+				          		and tu.std_id = li.std_id)AS pass
+	from tb_lecstd_info li
+    left outer join tb_userinfo ui  on ui.loginId = li.std_id 
+    left outer join tb_test_user tu on tu.std_id = li.std_id
+	where
+	li.lec_id =  #{lec_id}
+  group by ui.std_num
+	ORDER BY ui.name;
+	]]>
+	</select> 
+<!--   IFNULL((SELECT  tu.test_sco
+				          		FROM   tb_test_user tu
+				          		WHERE   tu.test_id = #{test_id}
+				          		and tu.std_id = li.std_id),1000)AS test_sco_f -->
+<select id="cnt_std_test" resultType="int"> 
+
+   	 select COUNT(distinct ui.loginId)
+	from tb_lecstd_info li
+    left outer join tb_userinfo ui  on ui.loginId = li.std_id 
+    left outer join tb_test_user tu on tu.std_id = li.std_id
+	where
+	li.lec_id =#{lec_id}
+	ORDER BY ui.name;
+
+	</select>
+<select id="std_test_f" resultType="kr.kosmo.jobkorea.adm.model.testPersonControlModel">
+   	<![CDATA[
+  select ui.std_num, 
+   			  ui.name,
+   			IFNULL((SELECT  tu.test_sco
+				          		FROM   tb_test_user tu
+				          		WHERE   tu.test_id =(SELECT te.test_id
+                                           						FROM tb_test te
+                                           						WHERE tu.test_id_2 = te.test_id_2  and test_sort ='재시험')
+				          		and tu.std_id  = ui.loginId), 1000)AS test_sco_f
+			,(SELECT  tu.pass
+				          		FROM   tb_test_user tu
+				          		WHERE   tu.test_id =(SELECT te.test_id
+                                           						FROM tb_test te
+                                           						WHERE tu.test_id_2 = te.test_id_2  and test_sort ='재시험')
+				          		and tu.std_id  = ui.loginId)AS pass
+	from tb_test_user tu
+    left outer join tb_userinfo ui  on ui.loginId = tu.std_id 
+    WHERE   tu.test_id_2 = #{test_id_2}
+            and tu.test_sco < 60  and tu.test_sort ='본시험'
+  group by ui.std_num
+ORDER BY ui.name;
+	]]>
+	</select>
+	<!-- //where절의 testid_2가 같고 sort가 재시험인 -->
+ <select id="cnt_std_test_f" resultType="int"> 
+   	<![CDATA[
+	 SELECT COUNT(ui.loginId)
+	from tb_test_user tu
+    left outer join tb_userinfo ui  on ui.loginId = tu.std_id 
+    WHERE   tu.test_id_2 = #{test_id_2}
+            and tu.test_sco < 60  and tu.test_sort ='본시험'
+ORDER BY ui.name;
+		]]>
+	</select>
+	
+</mapper>

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.kosmo.jobkorea.adm.dao.admAtdMngDao">
+
+
+	<!-- 강사 리스트 조회 -->
+	<select id="adm_list_Tutor" resultType="kr.kosmo.jobkorea.adm.model.admAtdMngModel">
+		SELECT loginID
+			  ,name
+			  ,tel 
+			  ,mail
+		FROM tb_userinfo
+		WHERE user_type = 'B'
+		
+	</select>
+
+	<!-- 강사 리스트 카운트  -->
+	<select id="listTutCnt" resultType="int">
+		SELECT Count(*)
+		FROM tb_userinfo
+		WHERE user_type = 'B'
+	</select>
+	
+	<!-- 강의 리스트 조회 -->
+	<select id="lecture_List_Select" resultType="kr.kosmo.jobkorea.tut.model.LecInfo">
+		SELECT lec_id,
+			   lec_name,
+			   DATE_FORMAT(c_st, '%Y.%m.%d') as c_st,
+			   DATE_FORMAT(c_end, '%Y.%m.%d') as c_end,
+			   truncate((pre_day/process_day*100),0)as day_result,
+			   max_pnum,
+			   tutor_name,
+			   ui.loginID
+		FROM tb_lec_info 
+			INNER JOIN  (
+						SELECT loginID
+						FROM tb_user_info
+						) AS ui ON ui.loginID = tutor_id
+				
+		WHERE tutor_id=#{tutor_id}
+	</select>
+	
+	<!-- 강의 리스트 카운트 조회 -->
+	<select id="listLecCnt" resultType="int">
+		SELECT Count(*)
+		FROM tb_lec_info
+		WHERE tutor_id=#{tutor_id}
+		
+	</select>
+	
+	<!-- 출석부 조회 -->
+	<select id="atdList" resultType="kr.kosmo.jobkorea.tut.model.AttendanceModel" parameterType="Integer">
+		select lsi.std_id,
+			   ui.tel,
+			   ui.name,
+			   li.pre_day,
+			   ( ifnull(a1.cnt,0) + ifnull(a2.cnt,0) ) as cnt,
+			   truncate(100-(( ifnull(a1.cnt,0) + ifnull(a2.cnt,0) ) / li.pre_day*100),0) as res
+          from tb_lecstd_info lsi
+               left outer join (
+                                select ta.std_id
+                                ,( count(*) div 3 ) as cnt  
+                                 from tb_atd ta
+                                 where (atd_state = '2' or atd_state ='3')
+                                 AND lec_id=#{lec_id}
+                                 group by ta.std_id 
+                                 ) as a1 on a1.std_id = lsi.std_id
+               left outer join (
+                                 select std_id 
+                                 ,count(*) as cnt
+                                  from tb_atd 
+                                  where atd_state = '4'
+                                  AND lec_id=#{lec_id}
+                                  group by std_id
+                                 ) as a2 on a2.std_id = lsi.std_id
+               LEFT OUTER JOIN tb_userinfo ui ON ui.loginId =  lsi.std_Id
+               left outer join (
+                                select pre_day, lec_id, lec_name
+                                from tb_lec_info
+                                ) as li on li.lec_id = lsi.lec_id
+               where lsi.lec_id = #{lec_id}
+	</select>
+
+
+
+	<select id="atdAll" resultType="kr.kosmo.jobkorea.tut.model.AttendanceModel" parameterType="Integer">
+		select distinct(atd.len_date)as d_len
+			   <!-- count(distinct (atd.len_date)) as count -->
+		from tb_atd atd
+		left outer join tb_userinfo ui on ui.loginId = atd.std_Id
+		where atd.lec_id = #{lec_id}
+	</select>
+
+
+
+
+  <select id="nameList" resultType="kr.kosmo.jobkorea.tut.model.AttendanceModel" parameterType="Integer">
+		select GROUP_CONCAT(atd.atd_state order by atd.len_date)as all_state,ui.name from (select * from tb_atd atd) atd
+		left outer join tb_userinfo ui on ui.loginId = atd.std_Id
+		where lec_id = #{lec_id} group by ui.name;
+	</select>
+	
+	
+	
+	
+	<insert id="atdStd" parameterType="AttendanceModel">
+		insert into tb_atd(
+				lec_id,
+				std_id,
+				len_date,
+				atd_time,
+				atd_state,
+				note
+		)values(
+				#{lec_id},
+				#{std_id},
+				now(),
+				now(),
+				#{atd_state},
+				#{note}
+		)
+	</insert>
+	
+	
+	
+	<select id="searchAtd" resultType="kr.kosmo.jobkorea.tut.model.AttendanceModel" parameterType="kr.kosmo.jobkorea.tut.model.AttendanceModel">
+		select atd_state
+		
+		from tb_atd
+		
+		where lec_id = #{lec_id} 
+		  and std_id = #{std_id}
+		  and len_date = #{len_date}		   
+	</select>
+	<update id="updateAtd" parameterType="AttendanceModel">
+		update tb_atd
+		   set atd_state  = #{atd_state}
+			
+		where lec_id = #{lec_id} 
+		  and std_id = #{std_id} 
+		  and len_date = #{len_date} 
+	
+	</update>
+	
+	
+	<update id="atd_plus" parameterType="Integer">
+		update tb_lec_info
+			set pre_day = pre_day +1
+		where lec_id = #{lec_id}
+	
+	</update>
+	
+	
+	<select id="atd_Date" resultType="kr.kosmo.jobkorea.tut.model.AttendanceModel" parameterType="kr.kosmo.jobkorea.tut.model.AttendanceModel">
+		  SELECT DATE_FORMAT(len_date, '%y/%m/%d') AS len_date
+		    FROM tb_atd
+		   WHERE lec_id = #{lec_id} 
+		GROUP BY len_date
+		ORDER BY len_date		   
+	</select>	
+	
+	
+	<select id="searchByDate" resultType="kr.kosmo.jobkorea.tut.model.AttendanceModel">
+		select * from tb_atd where len_date = #{len_date} and lec_id=#{lec_id}
+	</select>
+	
+</mapper>
