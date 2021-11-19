@@ -24,5 +24,5 @@ JSP Git jquery ajax HTML CSS
 
 ![5](https://user-images.githubusercontent.com/87194565/142553455-f5e77222-dcc5-42c1-9eac-c17b6454568f.png)
 
-###더 자세한 기능은 당시 제작했던 메뉴얼 pdf에서 담당자 이름 '정이안' 검색으로 상세히 확인할 수 있습니다.
-### https://docs.google.com/presentation/d/1MB0coiDACJ7Wjk3W6io8gsAn97vKvQhV/edit?usp=sharing&ouid=107554277207116771621&rtpof=true&sd=true
+### 더 자세한 기능은 당시 제작했던 메뉴얼 pdf에서 담당자 이름 '정이안' 검색으로 상세히 확인할 수 있습니다.
+##### https://docs.google.com/presentation/d/1MB0coiDACJ7Wjk3W6io8gsAn97vKvQhV/edit?usp=sharing&ouid=107554277207116771621&rtpof=true&sd=true
