@@ -10,8 +10,7 @@
 
 ### Skill
 
-Spring MySQL Vue.js 
-JSP Git jquery ajax HTML CSS
+#Spring #MySQL #Vue.js #JSP #Git #jquery #ajax #HTML #CSS
 
 ### View Web App
 ![1](https://user-images.githubusercontent.com/87194565/142553386-665bd375-e8aa-4585-958c-86f9fb4bba3e.png)
